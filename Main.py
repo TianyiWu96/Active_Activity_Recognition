@@ -12,9 +12,26 @@ from pandas import *
 from math import *
 from scipy.fftpack import fft
 from numpy import mean, sqrt, square
+import scipy
+from scipy.signal import *
+from scipy.stats import mode
+from sklearn import *
+from sklearn.metrics import confusion_matrix
+from sklearn.cluster import KMeans
+from sklearn.naive_bayes import GaussianNB
+from sklearn.linear_model import LogisticRegression
+from sklearn.neighbors.nearest_centroid import NearestCentroid
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
+from sklearn.linear_model import SGDClassifier
 from load_PAMAP2 import Loading_PAMAP2
 from load_HAPT import Loading_HAPT
+from feature_generate import *
+from evaluation import *
+# from sklearn.neural_network import MLPClassifier
+from sklearn.cross_validation import *
 warnings.filterwarnings("ignore")
+warnings.filterwarnings("ignore", category=DeprecationWarning)
 #%matplotlib inline
 # def parse_args():
 #     argparser = ArgumentParser()
@@ -31,7 +48,7 @@ PAMAP2_folder="PAMAP2_Dataset/Protocol"
 #      'PAMAP2': f=100HZ activity_number: 24 Users:  9
 
 # }
-def Loading(dataset,percentage):
+def Loading(dataset):
    data={}
    data['activity']=list()
    data['timestamp']=list()
@@ -49,12 +66,7 @@ def Loading(dataset,percentage):
    if(dataset=="PAMAP2"):
       paths=glob.glob(PAMAP2_folder+'/*.txt') 
       id=1
-      length=percentage*len(paths)//100
-      i=0
       for filepath in paths: 
-          if i>length:
-            break
-          else:
               data=Loading_PAMAP2(filepath,id,data)
               new=pd.DataFrame.from_dict(data)
               # print(new)
@@ -62,70 +74,80 @@ def Loading(dataset,percentage):
           # return piece
       return new
 
-def select(data, key_value_pairs):
+def select(data,key_value_pairs,return_all=False):
    for key in key_value_pairs:
-      select= data[key] == key_value_pairs[key]
+        if(return_all==False):
+          select= data[key] == key_value_pairs[key]
+          return data[select]
       # print(data[select])
-      return data[select]
-     
-def sliding_window(df,window_size,ratio):
-    feature_rows=[]
-    for i in range(0, len(df)-window_size, int(ratio*window_size)):
-        window = df.iloc[i:i+window_size]
-        feature_row = extract_features_in_window(window)
-        feature_rows.append(feature_row)
-    return pd.DataFrame(feature_rows)
+        else:
+          other=data[select==False]
+          return data[select],other
 
-def extract_features_in_window(df):
-    feature_row={}
+def seperate_feature_label(df):
+    labels=df['activity']
+    features=df.drop('activity','User',axis=1) 
+    return features,labels
 
-    df['m'] = np.sqrt(df['x']**2 + df['y']**2 + df['z']**2)
-    
-    extract_features_of_one_column(df, 'x', feature_row)
-    extract_features_of_one_column(df, 'y', feature_row)
-    extract_features_of_one_column(df, 'z', feature_row)
-    extract_features_of_one_column(df, 'm', feature_row)
+def Leave_one_person_out(user,df):
+    training, testing=select(df,{'User':user},True)
+    return training,testing
 
-    extract_features_of_two_columns(df, ['x', 'm'], feature_row)
-    extract_features_of_two_columns(df, ['y', 'm'], feature_row)
-    extract_features_of_two_columns(df, ['z', 'm'], feature_row)
-    
-    feature_row['User'] = df.iloc[0]['User']
-    feature_row['activity'] = df.iloc[0]['activity']
-
-    return feature_row
-def extract_features_of_one_column(df,key,feature_row):
-    series = df[key]
-    extract_statistical_features(series, '1_' + key, feature_row)
-
-def extract_features_of_two_columns(df, columns, feature_row):
-    feature_row['2_' + columns[0] + columns[1] + '_correlation'] = df[columns[0]].corr(df[columns[1]])
-
-def extract_statistical_features(series, prefix, feature_row):
-    feature_row[prefix + '_mean'] = series.mean()
-    feature_row[prefix + '_std'] = series.std()
-    feature_row[prefix + '_var'] = series.var()
-    feature_row[prefix + '_min'] = series.min()
-    feature_row[prefix + '_max'] = series.max()
-    feature_row[prefix + '_energy'] = np.mean(series**2)
+# def Supervised_learning():
 
 if __name__ == '__main__':
-    data=Loading('PAMAP2',20)
-    features=pd.DataFrame()
+    data=Loading('PAMAP2')
+    print('Loaded')
+    frequency=100
+    features_seperate={}
+    features_for_all=pd.DataFrame()
     users=data['User'].unique()
     for user in users:
         select_user=select(data,{'User':user})
         activities=data['activity'].unique()
         for activity in activities:
-            select_activity=select(select_user,{'activity':activity})
+            select_activity= select(select_user,{'activity':activity})
             # print(select_activity)
-            print(sliding_window(select_activity,512,0.5))
-            
+            #smoothing first:
+            #sliding windowing
+            features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
+            features_for_all=pd.concat([features_for_all,features_seperate[user]])
+    ##Baseline model
+    perform_percent=50
+    
     classifiers = {}      
-
-    ##Baseline
+    # classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
+    # classifiers['svc'] = svm.SVC(kernel='poly', max_iter=20000)
+    # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+    # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
+    # classifiers['LinearSVC'] = svm.LinearSVC()
+    classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', n_init=10, max_iter=300, tol=0.0001)
     
 #### Classification
+
+    for algorithm, classifier in classifiers.items(): 
+            for user in features_for_all['User']:
+                train_all,test_all=Leave_one_person_out(user,features_for_all)
+                train_x,train_y=seperate_feature_label(train_all)
+                test_x,test_y=seperate_feature_label(test_all)
+                results=pd.DataFrame()
+                print('Classification Begin, leave out:', user)
+                print('Perform:',algorithm)
+                classifier.fit(train_x)
+                predictions = classifier.predict(test_x)
+                results.append(pd.DataFrame({
+                    'prediction_score': predictions,
+                    'prediction': np.sign(predictions),
+                    'reference': testing_y,
+                    'user': user,
+                    'algorithm': algorithm,
+                }))
+    print(computing_result_metrics(results))
+
+
+        
+
+
 
     
 
