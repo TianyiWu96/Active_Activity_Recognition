@@ -114,7 +114,7 @@ if __name__ == '__main__':
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
     ##Baseline model
     perform_percent=50
-    
+    features_part=features_for_all.iloc()
     classifiers = {}      
     # classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
     # classifiers['svc'] = svm.SVC(kernel='poly', max_iter=20000)
