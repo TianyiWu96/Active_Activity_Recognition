@@ -1,4 +1,3 @@
-# import csv
 import numpy as np
 import csv as csv 
 from sklearn import svm
@@ -26,16 +25,17 @@ from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, Baggi
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.cross_validation import *
+from sklearn import preprocessing
 from load_PAMAP2 import Loading_PAMAP2
 #from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
+#from Baseline_test import *
 from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-#%matplotlib inline
 
 HAPT_folder="HAPT Data Set/RawData"
 PAMAP2_folder="PAMAP2_Dataset/Protocol"
@@ -81,25 +81,6 @@ def select(data,key_value_pairs,return_all=False):
           other = data[select==False]
           return data[select], other
 
-def seperate_feature_label(df):
-    labels=df['activity']
-    features=df.drop('activity',axis=1) 
-    features=df.drop('User',axis=1)
-    return features,labels
-
-def Leave_one_person_out(classifier,users ,df):
-    for algorithm, classifier in classifiers.items(): 
-        for i in range(len(users)):
-                testUser=users[i]
-                train_all, test_all=select(df,{'User':testUser},True)
-                train_x,train_y=seperate_feature_label(train_all)
-                test_x, test_y=seperate_feature_label(test_all)
-                classifier.fit(train_x,train_y)
-                predictions = classifier.predict(test_x)
-    return predictions, test_y
-
-# def Supervised_learning():
-
 if __name__ == '__main__':
     data=Loading('PAMAP2')
     print('Loaded')
@@ -117,6 +98,7 @@ if __name__ == '__main__':
             #sliding windowing
             features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
+
 
     # print(features_for_all)
     ##Baseline model
