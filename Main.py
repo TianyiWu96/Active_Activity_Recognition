@@ -1,4 +1,3 @@
-# import csv
 import numpy as np
 import csv as csv 
 from sklearn import svm
@@ -26,16 +25,17 @@ from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, Baggi
 from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.cross_validation import *
+from sklearn import preprocessing
 from load_PAMAP2 import Loading_PAMAP2
 from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
+#from Baseline_test import *
 from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-#%matplotlib inline
 
 HAPT_folder="HAPT Data Set/RawData"
 PAMAP2_folder="PAMAP2_Dataset/Protocol"
@@ -54,13 +54,13 @@ def Loading(dataset):
    data['z']=list()
    data['User']=list()
 
-   if(dataset=="HAPT"):
+   if(dataset == "HAPT"):
       paths=glob.glob(HAPT_folder+'/*.txt')
       labelpath = HAPT_folder+'/labels.txt'
       fnewdata = Loading_HAPT(paths,labelpath,data)
-      return newdata
+      return fnewdata
 
-   if(dataset=="PAMAP2"):
+   if(dataset == "PAMAP2"):
       paths=glob.glob(PAMAP2_folder+'/*.txt') 
       id=1
       for filepath in paths: 
@@ -78,25 +78,6 @@ def select(data,key_value_pairs,return_all=False):
         else:
           other = data[select==False]
           return data[select], other
-
-def seperate_feature_label(df):
-    labels=df['activity']
-    features=df.drop('activity',axis=1) 
-    features=df.drop('User',axis=1)
-    return features,labels
-
-def Leave_one_person_out(classifier,users ,df):
-    for algorithm, classifier in classifiers.items(): 
-        for i in range(len(users)):
-                testUser=users[i]
-                train_all, test_all=select(df,{'User':testUser},True)
-                train_x,train_y=seperate_feature_label(train_all)
-                test_x, test_y=seperate_feature_label(test_all)
-                classifier.fit(train_x,train_y)
-                predictions = classifier.predict(test_x)
-    return predictions, test_y
-
-# def Supervised_learning():
 
 if __name__ == '__main__':
     data=Loading('PAMAP2')
@@ -117,36 +98,8 @@ if __name__ == '__main__':
             #sliding windowing
             features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
-    # print(features_for_all)
-    ##Baseline model
-    classifiers = {}      
-    classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    classifiers['Multi-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
-    classifiers['DecisionTreeClassifier'] = DecisionTreeClassifier(max_depth=None,min_samples_split=1)
-    # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-    classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    classifiers['LinearSVC'] = svm.LinearSVC()
 
-    # classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)
-    # Classification
-    features,labels= seperate_feature_label(features_for_all)
-    for algorithm, classifier in classifiers.items():
-      classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
-      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
-      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
-    unsupervised['kMeans']= KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)]
-    for algorithm, classifier in unsupervised.items():
-      classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
-      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
-      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
-    # kf= KFold(9, n_folds=4, shuffle=False, random_state=None)
-    # for classifier in classifiers.items():
-    #   for train,test in kf：
-    #      train_x,test_x = features[train], features[test]
-    #      train_y,train_y =features[train],labels[test]
-    #      classifier.fit(train_x,train_y)
-    #      predictions = classifier.predict(test_x)
-    #   print('K-fold_validation:' classifier, classification_report(test_y,predictions))
+
                 
 
 
