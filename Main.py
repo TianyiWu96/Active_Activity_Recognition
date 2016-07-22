@@ -100,37 +100,6 @@ if __name__ == '__main__':
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
 
 
-    # print(features_for_all)
-    ##Baseline model
-    classifiers = {}      
-    classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    classifiers['Multi-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
-    classifiers['DecisionTreeClassifier'] = DecisionTreeClassifier(max_depth=None,min_samples_split=1)
-    # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-    classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    classifiers['LinearSVC'] = svm.LinearSVC()
-
-    # classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)
-    # Classification
-    features,labels= seperate_feature_label(features_for_all)
-    for algorithm, classifier in classifiers.items():
-      classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
-      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
-      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
-    #unsupervised['kMeans']= KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)]
-    #for algorithm, classifier in unsupervised.items():
-      #classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
-      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
-      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
-    # kf= KFold(9, n_folds=4, shuffle=False, random_state=None)
-    # for classifier in classifiers.items():
-    #   for train,test in kf：
-    #      train_x,test_x = features[train], features[test]
-    #      train_y,train_y =features[train],labels[test]
-    #      classifier.fit(train_x,train_y)
-    #      predictions = classifier.predict(test_x)
-    #   print('K-fold_validation:' classifier, classification_report(test_y,predictions))
-
 
 
         
