@@ -10,7 +10,7 @@ from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import SGDClassifier
 from sklearn.cross_validation import *
 from sklearn import preprocessing
-from
+import pandas as pd
 def seperate_feature_label(df):
     labels=df['activity']
     features=df.drop('activity',axis=1)
@@ -26,7 +26,7 @@ def select(data,key_value_pairs,return_all=False):
           return data[select], other
 
 def Leave_one_person_out(classifier,users ,df):
-    for algorithm, classifier in classifiers.items():
+    for algorithm, classifier in classifier.items():
         for i in range(len(users)):
                 testUser=users[i]
                 train_all, test_all=select(df,{'User':testUser},True)
