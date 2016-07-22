@@ -25,7 +25,7 @@ from sklearn.neighbors import KNeighborsClassifier
 from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
 from sklearn.linear_model import SGDClassifier
 from load_PAMAP2 import Loading_PAMAP2
-from load_HAPT import Loading_HAPT
+#from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
 # from sklearn.neural_network import MLPClassifier
@@ -57,14 +57,15 @@ def Loading(dataset):
    data['z']=list()
    data['User']=list()
 
-   if(dataset=="HAPT"):
-      paths=glob.glob(HAPT_folder+'/*.txt')
-      labelpath =HAPT_folder+'/labels.txt'
-      fnewdata=Loading_HAPT(paths,labelpath,data)
-      return newdata
-
+   # if(dataset=="HAPT"):
+   #    paths=glob.glob(HAPT_folder+'/*.txt')
+   #    labelpath =HAPT_folder+'/labels.txt'
+   #    fnewdata=Loading_HAPT(paths,labelpath,data)
+   #    return fnewdata
+   new = None
    if(dataset=="PAMAP2"):
-      paths=glob.glob(PAMAP2_folder+'/*.txt') 
+      paths=glob.glob(PAMAP2_folder+'/*.dat')
+      print str(paths)
       id=1
       for filepath in paths: 
               data=Loading_PAMAP2(filepath,id,data)
@@ -73,11 +74,12 @@ def Loading(dataset):
               id=id+1
           # return piece
       return new
-
+#return any specified column or one column and rest of it
 def select(data,key_value_pairs,return_all=False):
+
    for key in key_value_pairs:
-        if(return_all==False):
-          select= data[key] == key_value_pairs[key]
+        if(return_all == False):
+          select = data[key] == key_value_pairs[key]
           return data[select]
       # print(data[select])
         else:
@@ -99,50 +101,54 @@ if __name__ == '__main__':
     data=Loading('PAMAP2')
     print('Loaded')
     frequency=100
-    features_seperate={}
+    features_seperate={} #sperate feature for each user
     features_for_all=pd.DataFrame()
-    users=data['User'].unique()
+    users=data['User'].unique() #list of all users
     for user in users:
         select_user=select(data,{'User':user})
         activities=data['activity'].unique()
-        for activity in activities:
+        for activity in activities: #one user and one activity
             select_activity= select(select_user,{'activity':activity})
             # print(select_activity)
             #smoothing first:
             #sliding windowing
             features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
-    ##Baseline model
-    perform_percent=50
-    features_part=features_for_all.iloc()
-    classifiers = {}      
-    # classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    # classifiers['svc'] = svm.SVC(kernel='poly', max_iter=20000)
-    # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-    # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    # classifiers['LinearSVC'] = svm.LinearSVC()
-    classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', n_init=10, max_iter=300, tol=0.0001)
-    
-#### Classification
+            break
+    print features_for_all
 
-    for algorithm, classifier in classifiers.items(): 
-            for user in features_for_all['User']:
-                train_all,test_all=Leave_one_person_out(user,features_for_all)
-                train_x,train_y=seperate_feature_label(train_all)
-                test_x,test_y=seperate_feature_label(test_all)
-                results=pd.DataFrame()
-                print('Classification Begin, leave out:', user)
-                print('Perform:',algorithm)
-                classifier.fit(train_x)
-                predictions = classifier.predict(test_x)
-                results.append(pd.DataFrame({
-                    'prediction_score': predictions,
-                    'prediction': np.sign(predictions),
-                    'reference': testing_y,
-                    'user': user,
-                    'algorithm': algorithm,
-                }))
-    print(computing_result_metrics(results))
+
+#     ##Baseline model
+#     perform_percent=50
+#     features_part=features_for_all.iloc()
+#     classifiers = {}
+#     # classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
+#     # classifiers['svc'] = svm.SVC(kernel='poly', max_iter=20000)
+#     # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
+#     # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
+#     # classifiers['LinearSVC'] = svm.LinearSVC()
+#     classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', n_init=10, max_iter=300, tol=0.0001)
+#
+# #### Classification
+#
+#     for algorithm, classifier in classifiers.items():
+#             for user in features_for_all['User']:
+#                 train_all,test_all=Leave_one_person_out(user,features_for_all)
+#                 train_x,train_y=seperate_feature_label(train_all)
+#                 test_x,test_y=seperate_feature_label(test_all)
+#                 results=pd.DataFrame()
+#                 print('Classification Begin, leave out:', user)
+#                 print('Perform:',algorithm)
+#                 classifier.fit(train_x)
+#                 predictions = classifier.predict(test_x)
+#                 results.append(pd.DataFrame({
+#                     'prediction_score': predictions,
+#                     'prediction': np.sign(predictions),
+#                     'reference': testing_y,
+#                     'user': user,
+#                     'algorithm': algorithm,
+#                 }))
+#     print(computing_result_metrics(results))
 
 
         
