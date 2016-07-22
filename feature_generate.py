@@ -20,18 +20,18 @@ def normalize(df):
     return df_normalized
 
 def sliding_window(df,window_size,ratio):
-    feature_rows=[]
+    feature_rows = []
     for i in range(0, len(df)-window_size, int(ratio*window_size)):
         window = windowing(df,i,window_size)
         feature_row = extract_features_in_window(window)
         feature_rows.append(feature_row)
     return pd.DataFrame(feature_rows)
-    
+
 def windowing(df,start,window_size):
     return df.iloc[start:start+window_size]
 
 def extract_features_in_window(df):
-    feature_row={}
+    feature_row = {}
 
     df['m'] = np.sqrt(df['x']**2 + df['y']**2 + df['z']**2)
     

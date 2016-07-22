@@ -78,7 +78,7 @@ def get_confusion_matrix(df, reference_column = 'reference', prediction_column =
     
     confusion_matrix_df = pd.DataFrame(cm, columns = name_to_id_mapping, index = ["reference_" + str(x) for x in name_to_id_mapping])
     return confusion_matrix_df
-
+# the one to use
 def computing_result_metrics(df):
     precision = compute_precision_for_label(df, 1)
     recall = compute_recall_for_label(df, 1)

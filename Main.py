@@ -22,24 +22,21 @@ from sklearn.naive_bayes import GaussianNB
 from sklearn.linear_model import LogisticRegression
 from sklearn.neighbors.nearest_centroid import NearestCentroid
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier
+from sklearn.ensemble import RandomForestClassifier, ExtraTreesClassifier, BaggingClassifier
+from sklearn.tree import DecisionTreeClassifier
 from sklearn.linear_model import SGDClassifier
+from sklearn.cross_validation import *
 from load_PAMAP2 import Loading_PAMAP2
 from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
+from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 #%matplotlib inline
-# def parse_args():
-#     argparser = ArgumentParser()
-#     argparser.add_argument("--HAPT_path", default="/Users/LilyWU/Documents/activity_recognition_repo/HAPT Data Set/RawData")
-#     argparser.add_argument("--PAMAP2_path", default="/Users/LilyWU/Documents/activity_recognition_repo/PAMAP2_Dataset/Protocol")
-#     argparser.add_argument("--",default="/Users/LilyWU/Documents/activity_recognition_repo/Activity recognition exp 2/save")
-#     # argparser.add_argument("--save_path", default="patches/")
-#     return argparser.parse_args()
+
 HAPT_folder="HAPT Data Set/RawData"
 PAMAP2_folder="PAMAP2_Dataset/Protocol"
 # Datasets_description=
@@ -49,7 +46,7 @@ PAMAP2_folder="PAMAP2_Dataset/Protocol"
 
 # }
 def Loading(dataset):
-   data={}
+   data = {}
    data['activity']=list()
    data['timestamp']=list()
    data['x']=list()
@@ -59,8 +56,8 @@ def Loading(dataset):
 
    if(dataset=="HAPT"):
       paths=glob.glob(HAPT_folder+'/*.txt')
-      labelpath =HAPT_folder+'/labels.txt'
-      fnewdata=Loading_HAPT(paths,labelpath,data)
+      labelpath = HAPT_folder+'/labels.txt'
+      fnewdata = Loading_HAPT(paths,labelpath,data)
       return newdata
 
    if(dataset=="PAMAP2"):
@@ -76,22 +73,28 @@ def Loading(dataset):
 
 def select(data,key_value_pairs,return_all=False):
    for key in key_value_pairs:
-        if(return_all==False):
-          select= data[key] == key_value_pairs[key]
-          return data[select]
-      # print(data[select])
+        select = data[key] == key_value_pairs[key]
+        if(return_all == False):  return data[select]
         else:
-          other=data[select==False]
-          return data[select],other
+          other = data[select==False]
+          return data[select], other
 
 def seperate_feature_label(df):
     labels=df['activity']
-    features=df.drop('activity','User',axis=1) 
+    features=df.drop('activity',axis=1) 
+    features=df.drop('User',axis=1)
     return features,labels
 
-def Leave_one_person_out(user,df):
-    training, testing=select(df,{'User':user},True)
-    return training,testing
+def Leave_one_person_out(classifier,users ,df):
+    for algorithm, classifier in classifiers.items(): 
+        for i in range(len(users)):
+                testUser=users[i]
+                train_all, test_all=select(df,{'User':testUser},True)
+                train_x,train_y=seperate_feature_label(train_all)
+                test_x, test_y=seperate_feature_label(test_all)
+                classifier.fit(train_x,train_y)
+                predictions = classifier.predict(test_x)
+    return predictions, test_y
 
 # def Supervised_learning():
 
@@ -103,46 +106,48 @@ if __name__ == '__main__':
     features_for_all=pd.DataFrame()
     users=data['User'].unique()
     for user in users:
-        select_user=select(data,{'User':user})
-        activities=data['activity'].unique()
+        # print(user)
+        select_user = select(data,{'User':user})
+        activities = data['activity'].unique()
         for activity in activities:
-            select_activity= select(select_user,{'activity':activity})
-            # print(select_activity)
+            
+            select_activity = select(select_user,{'activity':activity})
+            #print(select_activity)
             #smoothing first:
             #sliding windowing
             features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
+    # print(features_for_all)
     ##Baseline model
-    perform_percent=50
-    features_part=features_for_all.iloc()
     classifiers = {}      
-    # classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    # classifiers['svc'] = svm.SVC(kernel='poly', max_iter=20000)
+    classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
+    classifiers['Multi-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
+    classifiers['DecisionTreeClassifier'] = DecisionTreeClassifier(max_depth=None,min_samples_split=1)
     # classifiers['MLP']=MLPClassifier(algorithm='l-bfgs', alpha=1e-5, hidden_layer_sizes=(5, 2), random_state=1)
-    # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    # classifiers['LinearSVC'] = svm.LinearSVC()
-    classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', n_init=10, max_iter=300, tol=0.0001)
-    
-#### Classification
+    classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
+    classifiers['LinearSVC'] = svm.LinearSVC()
 
-    for algorithm, classifier in classifiers.items(): 
-            for user in features_for_all['User']:
-                train_all,test_all=Leave_one_person_out(user,features_for_all)
-                train_x,train_y=seperate_feature_label(train_all)
-                test_x,test_y=seperate_feature_label(test_all)
-                results=pd.DataFrame()
-                print('Classification Begin, leave out:', user)
-                print('Perform:',algorithm)
-                classifier.fit(train_x)
-                predictions = classifier.predict(test_x)
-                results.append(pd.DataFrame({
-                    'prediction_score': predictions,
-                    'prediction': np.sign(predictions),
-                    'reference': testing_y,
-                    'user': user,
-                    'algorithm': algorithm,
-                }))
-    print(computing_result_metrics(results))
+    # classifiers['kMeans']=KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)
+    # Classification
+    features,labels= seperate_feature_label(features_for_all)
+    for algorithm, classifier in classifiers.items():
+      classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
+      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
+      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
+    unsupervised['kMeans']= KMeans(n_clusters=8, init='k-means++', max_iter=3000, random_state=None,tol=0.0001)]
+    for algorithm, classifier in unsupervised.items():
+      classification_results = cross_validation.cross_val_score(classifier, features, labels, cv=10)
+      # print （classifier.__class__.__name__, '\t & \t', classification_results.mean().round(2), '\t & \t', classification_results.std().round(2), ' \\\\'）
+      print(algorithm, "Accuracy: %0.2f (+/- %0.2f)" % (classification_results.mean(), classification_results.std() * 2))
+    # kf= KFold(9, n_folds=4, shuffle=False, random_state=None)
+    # for classifier in classifiers.items():
+    #   for train,test in kf：
+    #      train_x,test_x = features[train], features[test]
+    #      train_y,train_y =features[train],labels[test]
+    #      classifier.fit(train_x,train_y)
+    #      predictions = classifier.predict(test_x)
+    #   print('K-fold_validation:' classifier, classification_report(test_y,predictions))
+                
 
 
         
