@@ -13,6 +13,8 @@ from scipy.fftpack import fft
 from numpy import mean, sqrt, square
 from sklearn import preprocessing
 
+
+
 def normalize(df):
     min_max_scaler = preprocessing.MinMaxScaler()
     x_scaled = min_max_scaler.fit_transform(df)
