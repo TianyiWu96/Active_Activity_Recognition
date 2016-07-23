@@ -47,41 +47,32 @@ def Supervised_learner(df,name=None):
     users=df['User'].unique()
     classifiers ={}
     classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    # classifiers['MultiKernal-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
-    # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    # classifiers['LinearSVC'] = svm.LinearSVC()
+    classifiers['PolyKernal-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
+    classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
+    classifiers['LinearSVC'] = svm.LinearSVC()
+    classifiers['Kmeans']= KMeans(n_clusters=5, init='k-means++', max_iter=3000, random_state=None, tol=0.0001)
     features, labels = seperate_feature_label(df)
-    accuracy_al={}
+    accuracy=[]
     
     for algorithm, classifier in classifiers.items():
         # test_all=pd.DataFrame()
-        accuracy_all=None
-        for i in range(len(users)):
-                testUser=users[i]
-                train_u, test_u=select(df,{'User':testUser},True)
-                train_x,train_y=seperate_feature_label(train_u)
-                test_x, test_y=seperate_feature_label(test_u)
-                classifier.fit(train_x,train_y)
-                pred_y = classifier.predict(test_x)
-                accuracy_all = np.concatenate([accuracy_all,accuracy_score(pred_y, test_y)])
-        print ('\n%s Accuracy: %.2f%% (%.2f) (%s) ' % (algorithm, np.average(accuracy_all), np.std(accuracy_all)))
-        # print(classification_report(test_all,predition_all))
-
- #data with no labels, do not need to be normalized
-def Unsupervised_learner(df,normalized = False):
-     users=df['User'].unique()
-     
-     classifiers ={}
-     classifier= KMeans(n_clusters=5, init='k-means++', max_iter=3000, random_state=None, tol=0.0001)
-     print('Classifier: KMeans')
-     for i in range(len(users)):
+        # accuracy_all=None
+        accuracy=[]
+        for i in range(len(users)-1):
                 testUser=users[i]
                 train_all, test_all=select(df,{'User':testUser},True)
                 train_x,train_y=seperate_feature_label(train_all)
                 test_x, test_y=seperate_feature_label(test_all)
-                test_x= normalize(test_x)
-                train_x=normalize(train_x)
-                classifier.fit(train_x)
+                if(algorithm == 'Kmeans'):
+                    test_x= normalize(test_x)
+                    train_x=normalize(train_x)
+                    classifier.fit(train_x)
+                else:
+                    classifier.fit(train_x,train_y)
                 pred_y = classifier.predict(test_x)
-                print('User:', users[i],accuracy_score(pred_y,test_y))
-                # print(classification_report(test_y,pred_y))
+                accuracy.append(accuracy_score((pred_y,test_y)))
+            
+        print ('\n%s Accuracy: %.2f%% (%.2f)  ' % (algorithm, np.average(accuracy), np.std(accuracy)))
+       
+
+ #data with no labels, do not need to be normalized
