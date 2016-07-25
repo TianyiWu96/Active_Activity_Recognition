@@ -2,8 +2,6 @@ import numpy as np
 import csv as csv 
 from sklearn import svm
 import warnings 
-from argparse import ArgumentParser
-from path import Path
 from collections import defaultdict
 import pandas as pd
 import os,glob
@@ -30,10 +28,11 @@ from load_PAMAP2 import Loading_PAMAP2
 #from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
-#from Baseline_test import *
+from Baseline_test import *
 from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
+from sklearn.feature_selection import *
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -61,15 +60,12 @@ def Loading(dataset):
    #    return fnewdata
    new = None
    if(dataset=="PAMAP2"):
-      paths=glob.glob(PAMAP2_folder+'/*.dat')
-      print str(paths)
+      paths=glob.glob(PAMAP2_folder+'/*.txt')
       id=1
       for filepath in paths: 
               data=Loading_PAMAP2(filepath,id,data)
               new=pd.DataFrame.from_dict(data)
-              # print(new)
               id=id+1
-          # return piece
       return new
 #return any specified column or one column and rest of it
 def select(data,key_value_pairs,return_all=False):
@@ -82,7 +78,7 @@ def select(data,key_value_pairs,return_all=False):
           return data[select], other
 
 if __name__ == '__main__':
-    data=Loading('PAMAP2')
+    data =Loading('PAMAP2')
     print('Loaded')
     frequency=100
     features_seperate={} #sperate feature for each user
@@ -98,11 +94,8 @@ if __name__ == '__main__':
             #sliding windowing
             features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
             features_for_all=pd.concat([features_for_all,features_seperate[user]])
-
-
-
-
-        
+    Supervised_learner(features_for_all)
+    
 
 
 
