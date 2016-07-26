@@ -25,7 +25,7 @@ from sklearn.linear_model import SGDClassifier
 from sklearn.cross_validation import *
 from sklearn import preprocessing
 from load_PAMAP2 import Loading_PAMAP2
-#from load_HAPT import Loading_HAPT
+from load_HAPT import Loading_HAPT
 from feature_generate import *
 from evaluation import *
 from Baseline_test import *
@@ -36,7 +36,7 @@ from sklearn.feature_selection import *
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
-HAPT_folder="HAPT Data Set/RawData"
+HAPT_folder="HAPT Data Set/RawData/"
 PAMAP2_folder="PAMAP2_Dataset/Protocol"
 # Datasets_description=
 # {
@@ -53,12 +53,10 @@ def Loading(dataset):
    data['z']=list()
    data['User']=list()
 
-   # if(dataset=="HAPT"):
-   #    paths=glob.glob(HAPT_folder+'/*.txt')
-   #    labelpath =HAPT_folder+'/labels.txt'
-   #    fnewdata=Loading_HAPT(paths,labelpath,data)
-   #    return fnewdata
-   new = None
+   if(dataset=="HAPT"):
+      new=pd.DataFrame.from_dict(Loading_HAPT(HAPT_folder,data))
+      return new
+
    if(dataset=="PAMAP2"):
       paths=glob.glob(PAMAP2_folder+'/*.txt')
       id=1
@@ -76,25 +74,31 @@ def select(data,key_value_pairs,return_all=False):
         else:
           other = data[select==False]
           return data[select], other
-
+def generate_features(data,user,activity,):
+        select_user=select(data,{'User':user})
+        select_activity= select(select_user,{'activity':activity})
+        # print(select_activity)
+        features= sliding_window(select_activity,2*frequency,0.5)
+        return features
+        
 if __name__ == '__main__':
     data =Loading('PAMAP2')
-    print('Loaded')
-    frequency=100
+    frequency=50
     features_seperate={} #sperate feature for each user
     features_for_all=pd.DataFrame()
-    users=data['User'].unique() #list of all users
-    for user in users:
-        select_user=select(data,{'User':user})
-        activities=data['activity'].unique()
+    users=data['User'].unique()
+    # print(users)
+    activities= data['activity'].unique() #list of all users
+    #  print(activities)
+    for user in range(1,10):
         for activity in activities: #one user and one activity
-            select_activity= select(select_user,{'activity':activity})
-            # print(select_activity)
-            #smoothing first:
-            #sliding windowing
-            features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
-            features_for_all=pd.concat([features_for_all,features_seperate[user]])
+            features = generate_features(data,user,activity)
+    features_for_all=pd.concat([features_for_all,features])
+    # print(features_for_all)
     Supervised_learner(features_for_all)
+
+    
+
     
 
 
