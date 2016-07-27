@@ -16,17 +16,18 @@ def Loading_HAPT(foldername,data):
     			# print(experiment_id)
     		if(int(user_id)<10):
     			user_id='0'+user_id
-    		with open(foldername+'acc_exp'+experiment_id+'_user'+user_id+'.txt') as m:
-    			lines = m.readlines()
-    			for i in range(start,end+1):
-    				raw = lines[i].split()
-    				# print(data)
-    				data['x'].append(float(raw[0]))
-    				data['y'].append(float(raw[1]))
-    				data['z'].append(float(raw[2]))
-    				data['User'].append(int(user_id))
-    				data['activity'].append(int(activity))
-    				data['timestamp'].append(i+1)
+    		if(activity == 1 or activity ==2 or activity ==3 or activity==4 or activity==5 or activity==6):	
+	    		with open(foldername+'acc_exp'+experiment_id+'_user'+user_id+'.txt') as m:
+	    			lines = m.readlines()
+	    			for i in range(start,end+1):
+	    				raw = lines[i].split()
+	    				# print(data)
+	    				data['x'].append(float(raw[0]))
+	    				data['y'].append(float(raw[1]))
+	    				data['z'].append(float(raw[2]))
+	    				data['User'].append(int(user_id))
+	    				data['activity'].append(int(activity))
+	    				data['timestamp'].append(i+1)
     return data
 
 
