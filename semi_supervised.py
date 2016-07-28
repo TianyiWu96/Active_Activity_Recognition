@@ -18,26 +18,80 @@ from sklearn import *
 from sklearn.metrics import confusion_matrix
 from sklearn.cluster import KMeans
 from sklearn.semi_supervised import LabelSpreading
+from sklearn.semi_supervised import label_propagation
 from sklearn.cross_validation import *
 from sklearn import preprocessing
 from sklearn.metrics import classification_report
+import numpy as np
+import matplotlib.pyplot as plt
+from scipy import stats
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import datasets
+from sklearn.semi_supervised import label_propagation
+from sklearn.metrics import classification_report, confusion_matrix
+from Baseline_test import *
 def seperate_feature_label(df):
     labels = df['activity']
     features = df.drop('activity',axis=1)
     features = features.drop('User',axis=1)
     # print(features)
     return features,labels
-def semi_supervised_learner(df):
-	 feature,label=seperate_feature_label(df)
-	 random_unlabeled_points = np.where(np.random.random_integers(0, 1,size=len(label)))
-	 # print(random_unlabeled_points)
-	 labels = np.copy(label)
-	 labels[random_unlabeled_points] = -1
-	 print(labels)
-	 test_y=labels[random_unlabeled_points]
-	 model = LabelSpreading(kernel='knn', gamma=20, n_neighbors=7, alpha=0.2, max_iter=30, tol=0.001)
-	 model.fit(feature, labels)
-	 print(feature.iloc[random_unlabeled_points])
-	 y_pred=model.predict(feature.iloc[random_unlabeled_points])
-	 
-	 print(classification_report(test_y,y_pred))
+
+def balanced_sample_maker(X, y, sample_size, random_seed=None):
+    uniq_levels = y.unique()
+    uniq_counts = {level: sum(y == level) for level in uniq_levels}
+
+    if not random_seed is None:
+        np.random.seed(random_seed)
+
+    # find observation index of each class levels
+    groupby_levels = {}
+    for ii, level in enumerate(uniq_levels):
+        obs_idx = [idx for idx, val in enumerate(y) if val == level]
+        groupby_levels[level] = obs_idx
+    # oversampling on observations of each label
+    balanced_copy_idx = []
+    for gb_level, gb_idx in groupby_levels.items():
+        over_sample_idx = np.random.choice(gb_idx, size=sample_size, replace=True).tolist()
+        balanced_copy_idx+=over_sample_idx
+        # print(balanced_copy_idx)
+    np.random.shuffle(balanced_copy_idx)
+    # print(y.iloc[balanced_copy_idx])
+    # print(X.iloc[balanced_copy_idx])
+    return balanced_copy_idx
+
+def semi_supervised_learner(df,labeled_points,total_points):
+    #split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
+    
+    feature,label = seperate_feature_label(df)
+    indices = np.arange(len(feature))
+    label_indices= balanced_sample_maker(feature,label,labeled_points/len(label))
+    unlabeled_indices=np.delete(indices,np.array(label_indices))
+    rng = np.random.RandomState(0)
+    rng.shuffle(unlabeled_indices)
+    indices=np.concatenate((label_indices,unlabeled_indices[:total_points]))
+    n_total_samples = len(indices)
+    unlabeled_indices=np.arange(n_total_samples)[labeled_points:]
+    X = feature.iloc[indices]
+    y = label.iloc[indices]
+    for i in range(1):
+        y_train = np.copy(y)
+        y_train[unlabeled_indices] = -1
+        classifier= KNeighborsClassifier(n_neighbors=5)
+        classifier.fit(X.iloc[:labeled_points],y.iloc[:labeled_points])
+        y_pred = classifier.predict(X.iloc[labeled_points:])
+        print('Supervised learing:')
+        true_labels = y.iloc[unlabeled_indices]
+        print(confusion_matrix(true_labels,y_pred))
+        print(accuracy_score(true_labels, y_pred))
+        print('Semi-supervised learing:')
+        lp_model = label_propagation.LabelSpreading(gamma=0.25, kernel='knn',max_iter=300,n_neighbors=5)
+        lp_model.fit(X, y_train)
+        predicted_labels = lp_model.transduction_[unlabeled_indices]
+        # print('Iteration %i %s' % (i, 70 * '_'))
+        print("Label Spreading model: %d labeled & %d unlabeled (%d total)"
+              % (labeled_points, n_total_samples - labeled_points, n_total_samples))
+
+        print(confusion_matrix(true_labels, predicted_labels))
+        return accuracy_score(true_labels, predicted_labels))
+    

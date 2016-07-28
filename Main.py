@@ -33,6 +33,8 @@ from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
 from sklearn.feature_selection import *
+from semi_supervised import semi_supervised_learner
+import os.path
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
 
@@ -79,25 +81,29 @@ def generate_features(data,user,activity,):
         select_activity= select(select_user,{'activity':activity})
         # print(select_activity)
         features= sliding_window(select_activity,2*frequency,0.5)
+        # print(features)
         return features
-        
-if __name__ == '__main__':
-    data =Loading('PAMAP2')
-    frequency=50
-    features_seperate={} #sperate feature for each user
-    features_for_all=pd.DataFrame()
-    users=data['User'].unique()
-    # print(users)
-    activities= data['activity'].unique() #list of all users
-    #  print(activities)
-    for user in range(1,10):
-        for activity in activities: #one user and one activity
-            features = generate_features(data,user,activity)
-    features_for_all=pd.concat([features_for_all,features])
-    # print(features_for_all)
-    Supervised_learner(features_for_all)
 
+if __name__ == '__main__':
+    dataset='HAPT'
+    filepath="First_5_user_HAPT.csv"
+    if(not os.path.exists(filepath)):
+        data =Loading(dataset)
+        frequency=50
+        features_seperate={} #sperate feature for each user
+        features_for_all=pd.DataFrame()
+        users=data['User'].unique()
+        activities= data['activity'].unique() #list of all users
+        for user in range(1,16):
+            for activity in activities: #one user and one activity
+                features = generate_features(data,user,activity)
+                features_for_all=pd.concat([features_for_all,features])
+        
+        features_for_all.to_csv(filepath,header=features_for_all.columns.values.tolist())
+    data=pd.DataFrame.from_csv(filepath,header=0)
     
+    semi_supervised_learner(data,30,3000)
+    # data=pd.
 
     
 
