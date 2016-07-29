@@ -60,6 +60,30 @@ def balanced_sample_maker(X, y, sample_size, random_seed=None):
 def semi_supervised_learner(df,labeled_points,total_points):
     #split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
     
+            feature,label = seperate_feature_label(df)
+            indices = np.arange(len(feature))
+            label_indices= balanced_sample_maker(feature,label,labeled_points/len(label))
+            unlabeled_indices=np.delete(indices,np.array(label_indices))
+            rng = np.random.RandomState(0)
+            rng.shuffle(unlabeled_indices)
+            indices=np.concatenate((label_indices,unlabeled_indices[:total_points]))
+            n_total_samples = len(indices)
+            unlabeled_indices=np.arange(n_total_samples)[labeled_points:]
+            X = feature.iloc[indices]
+            y = label.iloc[indices]
+            y_train = np.copy(y)
+            y_train[unlabeled_indices] = -1
+            true_labels = y.iloc[unlabeled_indices]
+            lp_model = label_propagation.LabelSpreading(gamma=0.25, kernel='knn',max_iter=300,n_neighbors=6)
+            lp_model.fit(X, y_train)
+            predicted_labels = lp_model.transduction_[unlabeled_indices]
+            y_all = np.concatenate((y.iloc[:labeled_points],predicted_labels))
+            print(accuracy_score(true_labels, predicted_labels))
+            
+            return X, y_all,y
+def semi_supervised_test1(df,labeled_points,total_points):
+    #split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
+    
         feature,label = seperate_feature_label(df)
         accuracy_for_supervise=[]
         accuracy_for_semi_supervise=[]
@@ -71,8 +95,7 @@ def semi_supervised_learner(df,labeled_points,total_points):
         rng.shuffle(unlabeled_indices)
         indices=np.concatenate((label_indices,unlabeled_indices[:total_points]))
         n_total_samples = len(indices)
-        
-        for i in range(100):
+        for i in range(10):
             unlabeled_indices=np.arange(n_total_samples)[labeled_points:]
             X = feature.iloc[indices]
             y = label.iloc[indices]
@@ -82,6 +105,7 @@ def semi_supervised_learner(df,labeled_points,total_points):
             classifier= KNeighborsClassifier(n_neighbors=6)
             classifier.fit(X.iloc[:labeled_points],y.iloc[:labeled_points])
             y_pred = classifier.predict(X.iloc[labeled_points:])
+            y_all = pd.concat(y.iloc[:labeled_points],y_pred)
             true_labels = y.iloc[unlabeled_indices]
             # print(confusion_matrix(true_labels,y_pred))
             print("%d labeled & %d unlabeled (%d total)"
@@ -96,8 +120,7 @@ def semi_supervised_learner(df,labeled_points,total_points):
             x.append(labeled_points)
             # print(confusion_matrix(true_labels, predicted_labels))
             print('Semi-supervised learing:',accuracy_score(true_labels, predicted_labels))
-        
-            labeled_points+=5
+            labeled_points+=50
         x_sm = np.array(x)
         y_sm = np.array(accuracy_for_supervise)
         y1_sm=np.array(accuracy_for_semi_supervise)
@@ -110,11 +133,11 @@ def semi_supervised_learner(df,labeled_points,total_points):
         plt.ylabel('Accuracy')
         plt.title('Semi-supervised learning for total '+str(n_total_samples)+' samples ')
         plt.show()
-        return accuracy_score(true_labels, predicted_labels)
+        
 
-def semi_supervised_zsm(df,labeled_points,step):
-        for i in range(6):
-        total_points=200
+def semi_supervised_test2(df,labeled_points,step):
+        # for i in range(6):
+        total_points=600
         feature,label = seperate_feature_label(df)
         accuracy_for_supervise=[]
         accuracy_for_semi_supervise=[]
@@ -129,7 +152,7 @@ def semi_supervised_zsm(df,labeled_points,step):
         indices=np.concatenate((label_indices,unlabeled_indices[:total_points]))
         # n_total_samples = len(indices)
     
-        for i in range(60):
+        for i in range(80):
             x.append(total_points)
             unlabeled_index=np.arange(total_points)[labeled_points:]
             # print(unlabeled_index.size)

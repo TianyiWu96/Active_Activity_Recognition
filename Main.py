@@ -33,7 +33,7 @@ from sklearn.metrics import classification_report
 # from sklearn.neural_network import MLPClassifier
 from sklearn.cross_validation import *
 from sklearn.feature_selection import *
-from semi_supervised import semi_supervised_learner
+from semi_supervised import *
 import os.path
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
@@ -80,16 +80,16 @@ def generate_features(data,user,activity,):
         select_user=select(data,{'User':user})
         select_activity= select(select_user,{'activity':activity})
         # print(select_activity)
-        features= sliding_window(select_activity,2*frequency,0.5)
+        features = sliding_window(select_activity,2*frequency,0.5)
         # print(features)
         return features
 
 if __name__ == '__main__':
     dataset='HAPT'
-    filepath="First_5_user_HAPT.csv"
+    filepath="First_15_user_HAPT.csv"
     if(not os.path.exists(filepath)):
         data =Loading(dataset)
-        frequency=50
+        frequency= 50
         features_seperate={} #sperate feature for each user
         features_for_all=pd.DataFrame()
         users=data['User'].unique()
@@ -101,10 +101,7 @@ if __name__ == '__main__':
         
         features_for_all.to_csv(filepath,header=features_for_all.columns.values.tolist())
     data=pd.DataFrame.from_csv(filepath,header=0)
-    
-    semi_supervised_learner(data,30,3000)
-    # data=pd.
-
+    X,y_pred,y_true=semi_supervised_learner(data,300,3000)
     
 
 
