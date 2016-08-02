@@ -35,9 +35,11 @@ from sklearn.cross_validation import *
 from sklearn.feature_selection import *
 from semi_supervised import *
 import os.path
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 warnings.filterwarnings("ignore")
 warnings.filterwarnings("ignore", category=DeprecationWarning)
-
+# matplotlib inline
 HAPT_folder="HAPT Data Set/RawData/"
 PAMAP2_folder="PAMAP2_Dataset/Protocol"
 # Datasets_description=
@@ -72,36 +74,76 @@ def select(data,key_value_pairs,return_all=False):
 
    for key in key_value_pairs:
         select = data[key] == key_value_pairs[key]
-        if(return_all == False):  return data[select]
+        if(return_all == False):  
+          return data[select]
         else:
-          other = data[select==False]
+          other = data[select ==False]
           return data[select], other
-def generate_features(data,user,activity,):
+def generate_features(data,user,activity,frequency):
         select_user=select(data,{'User':user})
-        select_activity= select(select_user,{'activity':activity})
-        # print(select_activity)
+        select_user['x']=butter_filter(select_user['x'],  0.4, frequency)
+        select_user['y']=butter_filter(select_user['y'],  0.4, frequency)
+        select_user['z']=butter_filter(select_user['z'],  0.4, frequency)
+        select_activity =select(select_user,{'activity':activity})
         features = sliding_window(select_activity,2*frequency,0.5)
-        # print(features)
         return features
 
 if __name__ == '__main__':
     dataset='HAPT'
+    # filepath="First_5_for_PAMAP2.csv"
     filepath="First_15_user_HAPT.csv"
     if(not os.path.exists(filepath)):
         data =Loading(dataset)
+        print('loaded')
         frequency= 50
         features_seperate={} #sperate feature for each user
         features_for_all=pd.DataFrame()
         users=data['User'].unique()
-        activities= data['activity'].unique() #list of all users
+        activities = data['activity'].unique() #list of all users
         for user in range(1,16):
+            print(user)
+            # features_for_all=pd.DataFrame()
             for activity in activities: #one user and one activity
-                features = generate_features(data,user,activity)
+                features = generate_features(data,user,activity,frequency)
                 features_for_all=pd.concat([features_for_all,features])
-        
+            # features_for_all=Feature_select(features_for_all)
         features_for_all.to_csv(filepath,header=features_for_all.columns.values.tolist())
-    data=pd.DataFrame.from_csv(filepath,header=0)
-    X,y_pred,y_true=semi_supervised_learner(data,300,3000)
+    
+    data = pd.DataFrame.from_csv(filepath,header=0)
+    plt.subplot(231)
+    semi_supervised_test2(data, 250, 50)
+    plt.subplot(232)
+    semi_supervised_test2(data, 300, 50)
+    plt.subplot(233)
+    semi_supervised_test2(data, 350, 50)
+    plt.subplot(234)
+    semi_supervised_test2(data, 400, 50)
+    plt.subplot(235)
+    semi_supervised_test2(data, 450, 50)
+    plt.subplot(236)
+    semi_supervised_test2(data, 500, 50)
+    
+    plt.show()
+    # plt.savefig('increase labels.png')
+    # Feature_select(data)# users=data['User'].unique()
+    # activities= data['activity'].unique()
+    # for user in range(1,2):
+    #         # for activity in activities: #one user and one activity
+    #           df =select(data,{'User':user})
+    #           plotting=plt.figure().gca(projection='3d') 
+    #           for activity in activities:
+    #               df= select(df,{'activity':activity})
+    #               if(activity==1):
+    #                   plotting.scatter(df['x'],df['y'],df['z'],color='r')
+    #               if(activity==2):
+    #                   plotting.scatter(df['x'],df['y'],df['z'],color='b')
+                  
+    #           plt.show()
+    # Supervised_learner(data,accuracy)
+    # accuracy.plot()
+    # plt.show()
+    
+    # X,y_pred,y_true=semi_supervised_learner(data,100,3000)
     
 
 

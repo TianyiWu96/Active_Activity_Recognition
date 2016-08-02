@@ -14,14 +14,13 @@ import numpy as np
 from sklearn.svm import LinearSVC
 from sklearn.datasets import load_iris
 from sklearn.feature_selection import SelectFromModel
-import matplotlib.pyplot as plt
 
+import matplotlib.pyplot as plt
 
 def seperate_feature_label(df):
     labels = df['activity']
     features = df.drop('activity', axis=1)
     features = features.drop('User', axis=1)
-    # print(features)
     return features, labels
 
 
@@ -34,8 +33,6 @@ def select(data, key_value_pairs, return_all=False):
             other = data[select == False]
             return data[select], other
 
-
-# validation with
 def Leave_one_person_out(classifier, users, df):
     for i in range(len(users)):
         testUser = users[i]
@@ -53,30 +50,22 @@ def normalize(df):
 
 
 # data with labels,
-def Supervised_learner(df, name=None):
+def Supervised_learner(df, accuracy_tab,name=None):
     users = df['User'].unique()
     classifiers = {}
-    classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=5)
-    # classifiers['PolyKernal-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
-    # classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=5)
-    # classifiers['LinearSVC'] = svm.LinearSVC()
-    # classifiers['Kmeans']= KMeans(n_clusters=5, init='random', max_iter=3000, n_init=10, tol=0.0001)
+    classifiers['RandomForestClassifier'] = RandomForestClassifier(n_estimators=15)
+    classifiers['PolyKernal-SVC'] = svm.SVC(kernel='poly', max_iter=20000)
+    classifiers['KNeighborsClassifier'] = KNeighborsClassifier(n_neighbors=6)
+    classifiers['LinearSVC'] = svm.LinearSVC()
+    classifiers['Kmeans']= KMeans(n_clusters=6, init='random', max_iter=3000, n_init=6, tol=0.0001)
     # df=Feature_select(df)
     for algorithm, classifier in classifiers.items():
-        # test_all=pd.DataFrame()
-        # accuracy_all=None
         accuracy = []
-        # df=Feature_select(df)
-        # seperate test,train data:
-        for i in range(len(users) - 1):
+        for i in range(len(users)):
             testUser = users[i]
-            print(testUser)
             train_all, test_all = select(df, {'User': testUser}, True)
             train_x, train_y = seperate_feature_label(train_all)
-            # print(train_x)
-            # print(train_y)
             test_x, test_y = seperate_feature_label(test_all)
-            # print(test_x)
             if (algorithm == 'Kmeans'):
                 test_x = normalize(test_x)
                 train_x = normalize(train_x)
@@ -84,63 +73,33 @@ def Supervised_learner(df, name=None):
             else:
                 classifier.fit(train_x, train_y)
             y_pred = classifier.predict(test_x)
-            # print(confusion_matrix(test_y,y_pred))
-            # targetnames=['Lie','Sit','stand','iron','break','vacuum','break','ascend stairs','break','descend stairs','break','normal walk','break','nordic walk','break','cycle','break','run','break','rope jump']
             # print(classification_report(test_y,y_pred))
             accuracy.append(accuracy_score(y_pred, test_y))
+        accuracy_tab[algorithm]= np.average(accuracy)
+        print(np.average(accuracy))
+        print ('Leave one person out %s Accuracy: %.4f (%.2f)  ' % (algorithm, np.average(accuracy), np.std(accuracy)))
+    return accuracy_tab  
 
-        print (
-        'Leave one person out \n%s Accuracy: %.2f%% (%.2f)  ' % (algorithm, np.average(accuracy), np.std(accuracy)))
-
-
-def cluster_visualize(df):
-    classifiers['Kmeans'] = KMeans(n_clusters=5, init='random', max_iter=3000, n_init=10, tol=0.0001)
-    for algorithm, classifier in classifiers.items():
-        # test_all=pd.DataFrame()
-        # accuracy_all=None
-        accuracy = []
-        # df=Feature_select(df)
-        # seperate test,train data:
-        for i in range(len(users) - 1):
-            testUser = users[i]
-            print(testUser)
-            train_all, test_all = select(df, {'User': testUser}, True)
-            train_x, train_y = seperate_feature_label(train_all)
-            # print(train_x)
-            # print(train_y)
-            test_x, test_y = seperate_feature_label(test_all)
-            # print(test_x)
-            if (algorithm == 'Kmeans'):
-                test_x = normalize(test_x)
-                train_x = normalize(train_x)
-                classifier.fit(train_x)
-            else:
-                classifier.fit(train_x, train_y)
-            y_pred = classifier.predict(test_x)
-            # print(confusion_matrix(test_y,y_pred))
-            # targetnames=['Lie','Sit','stand','iron','break','vacuum','break','ascend stairs','break','descend stairs','break','normal walk','break','nordic walk','break','cycle','break','run','break','rope jump']
-            # print(classification_report(test_y,y_pred))
-            accuracy.append(accuracy_score(y_pred, test_y))
-
-
-# perform feature reduction using SVC
 def Feature_select(df):
     forest = ExtraTreesClassifier(n_estimators=250, random_state=0)
     X, y = seperate_feature_label(df)
     feature_list = np.array(df.columns.values)
     forest.fit(X, y)
     importances = forest.feature_importances_
+    droplist=[]
     for i in range(len(importances)):
-        if (importances[i] < 0.01):
-            df.drop(df.columns[i])
-            # print(features_for_all.columns[i])
+        if (importances[i] < 0.023):
+            droplist.append(i)
+    df.drop(df.columns[droplist], axis=1, inplace=True)
+    indices = np.argsort(importances)[::-1]
+    indices= indices[:10]
+   
+    plt.figure()
+    plt.title("Feature importance Ranking")
+    plt.bar(range(10), importances[indices],alpha=0.4,color="blue", align="center")
+    plt.xticks(range(10), feature_list[indices])
+    plt.xlabel('Feature type')
+    plt.ylabel('Relative importance')
+    plt.xlim([-1, 10])
+    plt.show()
     return df
-    # indices = np.argsort(importances)[::-1]
-    # std = np.std([tree.feature_importances_ for tree in forest.estimators_],  axis=0)
-    # plt.figure()
-    # plt.title("Feature importances")
-    # plt.bar(range(X.shape[1]), importances[indices],
-    #        color="r", yerr=std[indices], align="center")
-    # plt.xticks(range(X.shape[1]), feature_list[indices])
-    # plt.xlim([-1, X.shape[1]])
-    # plt.show()
