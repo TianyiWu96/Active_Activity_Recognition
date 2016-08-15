@@ -1,3 +1,4 @@
+from __future__ import division
 import matplotlib.pyplot as plt
 from load_PAMAP2 import Loading_PAMAP2
 #from load_HAPT import Loading_HAPT
@@ -86,6 +87,17 @@ def get_cluster(label, cluster_dict):
 #     return hit, Q_need
 
 
+def plot_Q_hit(usage_list, hit_list):
+    print usage_list
+    print hit_list
+    for i ,x in enumerate(hit_list):
+        hit_list[i] = hit_list[i]/ len(hit_list)
+    plt.plot(usage_list,hit_list, 'r--')
+    plt.xlabel('Query Number')
+    plt.title('Accuracy gain based on number of queries')
+    plt.ylabel('Accuracy')
+    plt.show(block= True)
+
 def plot_hits(usage_list, hit_list):
     print usage_list
     print hit_list
@@ -158,7 +170,7 @@ def test_new(new_data, cluster_dict,clf,current_set,current_label):
         # if ind % 200 == 0 and ind >= 200 :
         #      clf = train_base_classifier(current_set, current_label)
 
-    plot_hits(usage_list, hit_list)
+    plot_Q_hit(usage_list, hit_list)
     return cluster_dict
 
 def init_classes(data):
