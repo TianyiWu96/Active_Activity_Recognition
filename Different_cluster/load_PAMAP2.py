@@ -1,4 +1,4 @@
-import os, path
+import os
 import numpy as nP
 from pandas import Series
 ### timestamp | activityID | hr | temp+IMU hand (17 cols) | IMU chest (17 cols) | IMU ankle (17 cols)

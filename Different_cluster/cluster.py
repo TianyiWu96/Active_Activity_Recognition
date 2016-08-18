@@ -100,33 +100,20 @@ if __name__ == '__main__':
     newuser = "/Users/LilyWU/Documents/activity_recognition_for_sensor/Data/HAPT_user_16.csv"
     testpath = "/Users/LilyWU/Documents/activity_recognition_for_sensor/Data"
     data = pd.DataFrame.from_csv(filepath, header=0)
-    feature, label= seperate_feature_label(data)
+
+    feature, label = seperate_feature_label(data)
+
     cntr, u_orig, _, _, _, _, _ = fuzz.cluster.cmeans(
         feature, 6, 2, error=0.005, maxiter=1000)
-    print(cntr)
-    # Show 3-cluster model
-    fig2, ax2 = plt.subplots()
-    ax2.set_title('Trained model')
-    # for j in range(3):
-    #     ax2.plot(feature.iloc[0, u_orig.argmax(axis=0) == j],
-    #              feature.iloc[1, u_orig.argmax(axis=0) == j], 'o',
-    #              label='class ' + str(j))
-    # ax2.legend()
-    newdata=pd.DataFrame.from_csv(newuser, header=0)
-    new_feature,new_label=seperate_feature_label(newdata)
-    u, u0, d, jm, p, fpc = fuzz.cluster.cmeans_predict(
-        new_feature, cntr, 2, error=0.005, maxiter=1000)
-    cluster_membership = np.argmax(u, axis=0)  # Hardening for visualization
-    p
-    fig3, ax3 = plt.subplots()
-    ax3.set_title('Random points classifed according to known centers')
-    for j in range(6):
-        ax3.plot(new_feature.iloc[cluster_membership == j, 0],
-                 new_feature.iloc[cluster_membership == j, 1], 'o',
-                 label='class ' + str(j))
-    ax3.legend()
+    print(cntr.shape)
 
-    plt.show()
+    # Show 3-cluster model
+    # fig2, ax2 = plt.subplots()
+    # ax2.set_title('Trained model')
+    newdata = pd.DataFrame.from_csv(newuser, header=0)
+    new_feature,new_label=seperate_feature_label(newdata)
+
+    # plt.show()
 
 
 

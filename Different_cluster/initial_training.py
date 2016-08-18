@@ -2,7 +2,7 @@ from sklearn.semi_supervised import label_propagation
 from Baseline_test import *
 import matplotlib.pyplot as plt
 from scipy.interpolate import spline
-import numpy as np
+
 
 def seperate_feature_label(df):
     labels = df['activity']

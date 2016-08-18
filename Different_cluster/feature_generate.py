@@ -3,7 +3,7 @@ import csv as csv
 from sklearn import svm
 import warnings 
 from argparse import ArgumentParser
-from path import Path
+
 from collections import defaultdict
 import pandas as pd
 import os,glob

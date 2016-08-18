@@ -22,7 +22,6 @@ def Loading(dataset):
    data['z']=list()
    data['User']=list()
 
-   new = None
    if(dataset=="PAMAP2"):
       paths=glob.glob(PAMAP2_folder+'/*.dat')
       id=1
@@ -61,50 +60,36 @@ def get_features(data, user):
         select_activity= select(select_user,{'activity':activity})
         features_seperate[user]= sliding_window(select_activity,5*frequency,0.5) #smoothing first --> sliding windowing
         features_for_all=pd.concat([features_for_all,features_seperate[user]])
-    print ("------------")
+    print("------------")
     #print features_for_all
     return features_for_all
 
 # DONE check read dataset
 # DONE check feature creation
 # DONE select a portion of dataset windows
-# DONE train a random forest
-# TODO feed based on timing (func : getNext())
-# DONE implemenet comparison code
+
+# TODO a data structure that allow for updates , time based
+# check for hierachical clustering for storing the information, and store the needed points for later use.
+# TODO weighted classifier voting strategy for making good estimation vs. confidence threshold using voting between classifiers, or votingg between cluster centers.
+# TODO graph based methods for online prediction? how to update the distance matrix every time is hard.
+
+# TODO : Use the representative points for classification can be alternative to random selection for semi-supervised learning, or construct a simialrity matrix
+# #representative points are for sparsification of the graph.
+# The idea is worse because it doesn't give us the good estimation on how the classifier will perform and make the impovements.
+# thus, the better approach is to estimate the expected error and use
+# how to compute for expected error?
+#how to update the model? just use the graph based methods for inference. and change the matrix via engenvector ?
+# TODO check the multivariate gaussian distribution works for clustering with comparison to distance
 # TODO visualize --> show points in each cluster and added points with their assigned label
+
 def main():
     data=Loading('PAMAP2')
-    print('Data Loaded')
     #users=data['User'].unique() #list of all users
     train_feature, train_label = seperate_feature_label(get_features(data, 1))
     test_feature, test_label = seperate_feature_label(get_features(data, 2))
-    ########################### here we have the dataset ##################
     clf = train_base_classifier(train_feature, train_label)
-    print("clf trained")
-    print train_feature.shape
+    print(train_feature.shape)
     add_one(clf, test_feature, test_label, train_feature, train_label)
-
 
 if __name__ == '__main__':
     main()
-
-
-
-
-
-
-# data=Loading('PAMAP2')
-# print('Data Loaded')
-# frequency=100
-# features_seperate={} #sperate feature for each user
-# features_for_all=pd.DataFrame()
-# users=data['User'].unique() #list of all users
-# print users
-# for user in users:
-#     select_user=select(data,{'User':user})
-#     activities=data['activity'].unique()
-#     for activity in activities: #one user and one activity
-#         select_activity= select(select_user,{'activity':activity})
-#         #smoothing first --> sliding windowing
-#         features_seperate[user]= sliding_window(select_activity,5*frequency,0.5)
-#         features_for_all=pd.concat([features_for_all,features_seperate[user]])

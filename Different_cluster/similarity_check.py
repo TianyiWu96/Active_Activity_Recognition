@@ -7,12 +7,14 @@ from sklearn.cross_validation import cross_val_score
 
 def train_base_classifier(features, labels):
     clf = RandomForestClassifier(n_estimators=30)
+    # print(features)
     clf.fit(features, labels)
-    classification_results = cross_val_score(clf, features, labels, cv=10)
-    print classification_results
+    # classification_results = cross_val_score(clf, features, labels, cv=10)
+    # print('start')
+    # print classification_results
     return clf
 
-#TODO check new node with which nodes?
+#TODO chekc new node with which nodes?
 #TODO how to update?
 def add_one(clf, test_features, test_labels, points, labels):
     #print points
