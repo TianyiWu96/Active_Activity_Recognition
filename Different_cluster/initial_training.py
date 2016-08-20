@@ -51,8 +51,7 @@ def split(df, num):
     xx = feature.iloc[unlabeled_indices]
     yy= feature.iloc[unlabeled_indices]
     return (x,y,xx,yy)
-
-def semi_supervised_learner(df, labeled_points, total_points):
+def semi_supervised_learner(df,labeled_points, total_points):
     # split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
     feature, label = seperate_feature_label(df)
     indices = np.arange(len(feature))
@@ -67,14 +66,29 @@ def semi_supervised_learner(df, labeled_points, total_points):
     y = label.iloc[indices]
     y_train = np.copy(y)
     y_train[unlabeled_indices] = -1
+    print(y_train)
     true_labels = y.iloc[unlabeled_indices]
     lp_model = label_propagation.LabelSpreading(gamma=0.25, kernel='knn', max_iter=300, n_neighbors=6)
     lp_model.fit(X, y_train)
     predicted_labels = lp_model.transduction_[unlabeled_indices]
     y_all = np.concatenate((y.iloc[:labeled_points], predicted_labels))
-    print(accuracy_score(true_labels, predicted_labels))
-    return X, y_all, y
+    # print(accuracy_score(true_labels, predicted_labels))
+    return X, y_all, y_train,unlabeled_indices
 
+def online_semi_supervised(x_old, x_new,y_new,y_train,unlabeled_indices):
+    x_old=np.array(x_old)
+    y_train= np.array(y_train)
+    print(y_train)
+    for i in range(len(x_new)):
+      np.insert(x_old,x_new[i])
+      np.insert(y_train,y_new[i])
+    print(y_train)
+    lp_model = label_propagation.LabelSpreading(gamma=0.25, kernel='knn', max_iter=300, n_neighbors=6)
+    lp_model.fit(x_old, y_train)
+    unlabeled_indices += len(x_new)
+    predicted_labels = lp_model.transduction_[unlabeled_indices]
+    y_all = np.concatenate((y_new[:unlabeled_indices[0]], predicted_labels))
+    return x_old, y_all, y_train, unlabeled_indices
 
 def semi_supervised_test1(df, labeled_points, total_points):
     # split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
@@ -164,14 +178,12 @@ def semi_supervised_test2(df, labeled_points, step):
         print("%d labeled & %d unlabeled (%d total)"
               % (labeled_points, total_points - labeled_points, total_points))
         accuracy_for_supervise.append(accuracy_score(true_labels, y_pred))
-
         lp_model = label_propagation.LabelSpreading(gamma=1, kernel='knn', max_iter=300, n_neighbors=6)
         lp_model.fit(X, y_train)
         predicted_labels = lp_model.transduction_[unlabeled_index]
         # print('Iteration %i %s' % (i, 70 * '_'))
         accuracy_for_semi_supervise.append(accuracy_score(true_labels, predicted_labels))
         print('Semi-supervised learning:', accuracy_score(true_labels, predicted_labels))
-
         total_points += step  # print(unlabeled_indices[(total_points-50):total_points])
         indices = np.concatenate((indices, unlabeled_indices[(total_points - step):total_points]))
 

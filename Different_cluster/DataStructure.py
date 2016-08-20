@@ -35,6 +35,7 @@ class Point(object):
 
     def __cmp__(self, other):
         return cmp(self.dist, other.dist)
+
 # construct the similarity matrix by supervised labels
 class MyCluster:
     def __init__(self, len, label):
@@ -43,9 +44,10 @@ class MyCluster:
         self.min_heap_list = []
         self.max_heap_list = []
         self.label = label
-        self.centers = heapq.nsmallest(10, self.min_heap_list)
-        self.boudaries = heapq.nsmallest(10, self.max_heap_list)
+        self.centers = heapq.nsmallest(20, self.min_heap_list)
+        self.boudaries = heapq.nsmallest(20, self.max_heap_list)
         self.radius=[0] * len
+
     def add_point(self, point):
         heapq.heappush(self.min_heap_list, point)
         point2 = Point(point.features, point.label)
@@ -58,9 +60,9 @@ class MyCluster:
             self.radius[ind] = math.sqrt((math.pow(self.radius[ind],2)*self.count + math.pow((point.features[ind]-self.center[ind]),2))/(self.count + 1))
 
         self.count = self.count + 1
+
     def center_update(self,newpoint,learning_rate):
         print('updated')
-        # print(self.centers)
         for i in range(len(newpoint.features)):
             self.center[i]=self.center[i]+learning_rate*(newpoint.features[i]-self.center[i])
         for point in self.centers:
@@ -73,20 +75,16 @@ class MyCluster:
             point = heapq.heappop(self.max_heap_list)
             point.set_dist(self.center)
             heapq.heappush(self.max_heap_list, point)
-        # print(self.centers)
         return
 
-    def initial_set(self, point_list, number):
-        indices = np.arange(len(point_list))
-        np.random.shuffle(indices)
+    def initial_set(self,x, y, number):
         for i in range(number):
-            feature= point_list.iloc[indices[i]][:37]
-            # print(feature)
-            label =point_list.iloc[indices[i]][39]
-            new_point= Point(feature,label)
-            new_point.set_dist(feature)
+            # print(x.iloc[i])
+            new_point= Point(x.iloc[i],y[i])
+            new_point.set_dist(x.iloc[i])
             self.add_point(new_point)
         return
+
     def similarity_check(self, old_point, new_point,rf):
         trees = rf.estimators_
         count = 0
@@ -96,6 +94,7 @@ class MyCluster:
             count = count + 1 if baseline_res == new_res else count
         similarity = count/ len(trees)
         return old_point.weight * similarity
+
     def Gaussian_membership(self,point_dict):
         new_point = Point.init_from_dict(point_dict, point_dict['activity'])
         new_point.set_dist(self.center)
@@ -104,11 +103,14 @@ class MyCluster:
         for i in range(len(new_point.features)):
             sum+= math.pow((new_point.features[i]-self.center[i]),2)
             list.append(math.pow((new_point.features[i]-self.center[i]),2))
-        #TODO:whats wrong?
+        #TODO: whats wrong?
         sum=sum/np.array(list).var()
         sum= math.exp(-1/2*sum)
         # print('compare gauss with dist',sum, new_point.dist,new_point.label)
         return sum
+
+    def distance_measurement(self,point_dict):
+        return
     def compare_point(self, point_dict,clf):
         new_point = Point.init_from_dict(point_dict, point_dict['activity'])
         # smallest = heapq.nsmallest(10, self.min_heap_list)
@@ -126,6 +128,5 @@ class MyCluster:
     def add_labeled(self, point_dict):
         added_point = self.add_point(point_dict)
         added_point.weight = 1
-
 if __name__ == '__main__':
     pass
