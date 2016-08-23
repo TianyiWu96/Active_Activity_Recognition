@@ -125,12 +125,12 @@ def Loading_HAPT(foldername, data):
 # return any specified column or one column and rest of it
 def select(data, key_value_pairs, return_all=False):
     for key in key_value_pairs:
-        select = data[key] == key_value_pairs[key]
-        if (return_all == False):
-            return data[select]
-        else:
-            other = data[select == False]
-            return data[select], other
+            select = data[key] == key_value_pairs[key]
+            if (return_all == False):
+                return data[select]
+            else:
+                other = data[select == False]
+                return data[select], other
 
 
 def generate_features(data, user, activity,frequency ):
@@ -229,15 +229,6 @@ def seperate_feature_label(df):
     # print(features)
     return features, labels
 
-
-def select(data, key_value_pairs, return_all=False):
-    for key in key_value_pairs:
-        select = data[key] == key_value_pairs[key]
-        if (return_all == False):
-            return data[select]
-        else:
-            other = data[select == False]
-            return data[select], other
 
 
 # validation with
