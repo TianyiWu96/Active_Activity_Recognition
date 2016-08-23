@@ -8,7 +8,7 @@ from sklearn.ensemble import RandomForestClassifier
 import numpy as np
 import matplotlib.pyplot as plt
 from sklearn.semi_supervised import label_propagation
-
+import pandas as pd
 # class Semi_supervised_learner(object):
 #     def __init__(self, df, labeled_points,total_points):
 #         self.x=[]
@@ -146,15 +146,28 @@ class Cluster(object):
         self.boudaries = heapq.nsmallest(20, self.max_heap_list)
         for dist,small in self.centers:
             sim_center.append(self.similarity_check(small, new_point, clf))
-        for dist,large in self.boudaries:
-            sim_boundry.append(self.similarity_check(large, new_point, clf))
-        return (sim_center, sim_boundry)
+        # for dist,large in self.boudaries:
+        #     sim_boundry.append(self.similarity_check(large, new_point, clf))
+        # return (sim_center, sim_boundry)
+        return sim_center
 
+    def compare_boundary(self, new_point, clf):
+        self.centers = heapq.nsmallest(20, self.min_heap_list)
+        new_point.set_dist(self.center)
+        # sim_center = []
+        sim_boundry = []
+        self.boudaries = heapq.nsmallest(20, self.max_heap_list)
+        for dist, small in self.centers:
+            sim_boundry.append(self.similarity_check(small, new_point, clf))
+        # for dist,large in self.boudaries:
+        #     sim_boundry.append(self.similarity_check(large, new_point, clf))
+        # return (sim_center, sim_boundry)
+        return sim_boundry
 class Active_learned_Model(object):
     def __init__(self, x, y_all,max_query, rf):
         self.clusters=dict()
         self.count=0
-        self.query={}
+        self.query=0
         self.rf= rf
         self.x= x
         self.y= y_all
@@ -188,13 +201,11 @@ class Active_learned_Model(object):
                 # print(newpoint.dist)
         self.clusters=seen_labels
         return seen_labels
-
     # def query_by_similarity(self, used_count,max_query,new):
     def query_by_similarity(self, new_x,new_y,flag):
         disagree = False
         tmp_label=-1
         new_point=Point.init_from_dict(new_x,tmp_label)
-        print('new_point')
         res=[]
         str=time.time()
         for label in self.clusters.keys():
@@ -217,37 +228,39 @@ class Active_learned_Model(object):
         if(sec_max ==0): sec_max=1
         third = int(self.rf.predict(new_x))
         print(max - sec_max, max * sec_max, third)
-
-        if (tmp_label!=third) : disagree=True
+        if (tmp_label!=third) : disagree =True
         # print('disagree')
-        if flag == True:
-            if((max*sec_max<0.05) and (max-sec_max)<0.05)|(max*sec_max+max-sec_max<0.11)|(disagree==True):
-                # (max / sec_max < threshold - (threshold-1)/ ( math.log1p(self.max_query)) * (math.log1p(self.count))) | (max==0):
+        if (self.count < self.max_query) and (flag == True) and (((max*sec_max<0.05) and (max-sec_max)<0.05)|(max*sec_max+max-sec_max<0.11)|(disagree==True)):
+        # if (self.count < self.max_query) and (flag == True) and (((max*sec_max<0.05) and (max-sec_max)<0.05)|(max*sec_max+max-sec_max<0.11)|(disagree==True)):
+        # if (self.count < self.max_query) and (flag == True) and ((max / sec_max < 1.3 - (1.3-1)/ ( math.log1p(self.max_query)) * (math.log1p(self.count)))|(disagree==True)|(max==0)):
                 print('query for:', new_y)
                 self.count+= 1
                 new_point.label= new_y
                 c = self.clusters[new_point.label]
                 new_point.set_dist(c.center)
+                new_point.weight=1
                 c.add_point(new_point)
                 return True, new_point
         else:
-            if(new_y!= tmp_label):
-                print('Wrong',new_y,tmp_label,tmp_label_sec)
-            new_point.label=tmp_label
-            c = self.clusters[new_point.label]
-            new_point.set_dist(c.center)
-            return False, new_point
+                if(new_y!= tmp_label):
+                    print('Wrong',new_y,tmp_label,tmp_label_sec)
+                new_point.label=tmp_label
+                c = self.clusters[new_point.label]
+                new_point.set_dist(c.center)
+                return False, new_point
 
-    def update(self,buffer):
+
+    def update_RF(self,buffer):
         # TODO: haven't change
         pld=time.time()
         for point in buffer:
             c =self.clusters[point.label]
             c.add_point(point)
             c.update()
-            self.x.tolist()
-            np.concatenate((np.array(self.x), np.array([point.features])))
-            np.concatenate((self.y, [point.label]))
+            np.concatenate((self.x, np.array([point.features])))
+            np.concatenate((self.y, np.array([point.label])))
+            print(self.x)
+            print(self.y)
         clf = RandomForestClassifier(n_estimators=30)
         clf.fit(self.x,self.y)
         self.rf=clf
