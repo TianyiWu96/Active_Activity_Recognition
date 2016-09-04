@@ -185,23 +185,29 @@ def semi_supervised_learner(df, labeled_points, total_points):
     # split the data according to the classes, generate labelled , unlabelled mark for each and reshuffle.
     feature, label = seperate_feature_label(df)
     indices = np.arange(len(feature))
+    print('done')
     label_indices = balanced_sample_maker(feature, label, labeled_points / len(label))
     unlabeled_indices = np.delete(indices, np.array(label_indices))
     rng = np.random.RandomState(0)
     rng.shuffle(unlabeled_indices)
     indices = np.concatenate((label_indices, unlabeled_indices[:total_points]))
     n_total_samples = len(indices)
+    print(n_total_samples)
     unlabeled_indices = np.arange(n_total_samples)[labeled_points:]
+    print(unlabeled_indices)
     X = np.array(feature.iloc[indices])
     y = label.iloc[indices]
     y_train = np.copy(y)
     y_train[unlabeled_indices] = -1
-    # print(y_train)
+    print(y_train)
     true_labels = y.iloc[unlabeled_indices]
     lp_model = label_propagation.LabelSpreading(gamma=0.25, kernel='knn', max_iter=300, n_neighbors=6)
     lp_model.fit(X, y_train)
+
+    print('done')
     predicted_labels = lp_model.transduction_[unlabeled_indices]
     y_all = np.concatenate((y.iloc[:labeled_points], predicted_labels))
+    print('done')
     print(accuracy_score(true_labels, predicted_labels))
     return X, y_all, unlabeled_indices
 
